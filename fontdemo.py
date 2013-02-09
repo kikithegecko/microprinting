@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-import serial
-
 """ Prints different fonts in various configurations. """
 
-# receipt printer is connected via serial-to-usb converter
+import serial
+
+# initialize printer with given  baudrate
 printer = serial.Serial("/dev/ttyUSB0", 19200)
+
+# set input text
 inputtext = "abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n1234567890\n"
 
 # normal
