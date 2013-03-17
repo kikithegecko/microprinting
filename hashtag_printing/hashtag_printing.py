@@ -8,17 +8,18 @@ from time import strftime, mktime, strptime, sleep
 
 class Printer(object):
 
-	def __init__(self, serialPrinter, searchterm, allowReplies=False):
+	def __init__(self, serialPrinter, searchterm, allowReplies=False, allowRetweets=True):
 		self.printer = serialPrinter
 		self.searchterm = searchterm
 		self.allowReplies = allowReplies
+		self.allowRetweets = allowRetweets
 
 		# some fancy metadata stuff
 		self.printHeadline(self.searchterm)
 
-		last_id_filename = "last_id_searchterm_%s" % self.searchterm.replace("#", "")
-		microprint_path = os.path.dirname(os.path.abspath(__file__))
-		self.savepoint_file = os.path.join(microprint_path, last_id_filename)
+		lastIdFilename = "last_id_searchterm_%s" % self.searchterm.replace("#", "")
+		microprintPath = os.path.dirname(os.path.abspath(__file__))
+		self.savepointFile = os.path.join(microprintPath, lastIdFilename)
 
 	def printHeadline(self, text, metadata=None):
 		# Bigger font
@@ -44,46 +45,55 @@ class Printer(object):
 
 	def getSavepoint(self):
 		try:
-			with open(self.savepoint_file, "r") as file:
+			with open(self.savepointFile, "r") as file:
 				return file.read()
 		except IOError:
 			return ""
 
 	def writeSavepoint(self, lastId):
 		# write last printed tweet id to file
-		with open(self.savepoint_file, "w") as file:
+		with open(self.savepointFile, "w") as file:
 			file.write(str(lastId))
 
 
 	def printRetweets(self):
 		# search query
-		twit = twitter.Twitter()
+		twit = twitter.Twitter(True)
 		timeline = twit.search(self.searchterm, since_id=self.getSavepoint(), max_results=999)
 
-		print "%d items found." % len(timeline)
+		if len(timeline) == 0:
+			print "No new Tweets at the moment."
+			return
+
+		lastTweetId = timeline[0]["id"]
 
 		if not self.allowReplies:
-			# filter @replies out and reverse timeline
+			# filter @replies out
 			timeline = filter(lambda status: status["text"][0] != "@", timeline)
-			timeline.reverse()
+
+		if not self.allowRetweets:
+			# filter retweets out
+			timeline = filter(lambda status: status["text"][:3] != "RT ", timeline)
+
+		timeline.reverse()
+		print "%d items found." % len(timeline)
 
 		for status in timeline:
 			# Generates messages
-			timestamp = datetime.fromtimestamp(mktime(strptime(status["created_at"], 
+			timestamp = datetime.fromtimestamp(mktime(strptime(status["created_at"],
 				"%a, %d %b %Y %H:%M:%S +0000")))
 
 			message = "(%(created)s) %(screenname)s: %(statusmessage)s\n\n" \
-				% {"created" : timestamp, "screenname" : status["from_user"], 
+				% {"created" : timestamp, "screenname" : status["from_user"],
 				"statusmessage" : status["text"]}
 
 			# Wraps the text in order to avoid cut text
 			message = textwrap.fill(text=message, width=48)
 			message = message + "\n\n"
 			self.printer.write(message.encode("cp437", "replace"))
-			print message
+			print message.encode("utf-8")
 
-		if len(timeline) != 0:
-			self.writeSavepoint(timeline[-1]["id"])
+		self.writeSavepoint(lastTweetId)
 
 
 # print to stdout instead of printer
@@ -99,21 +109,23 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(
 		description="Prints tweets containing given search term on serial receipt printer.")
 	parser.add_argument("searchterm", type=str, help="term to search for (e.g. #yourHashtag)")
-	parser.add_argument("-d", "--device", type=str, default="/dev/ttyUSB0", 
+	parser.add_argument("-d", "--device", type=str, default="/dev/ttyUSB0",
 		help="device name or port number (default: /dev/ttyUSB0)")
-	parser.add_argument("-b", "--baudrate", type=int, default=19200, 
+	parser.add_argument("-b", "--baudrate", type=int, default=19200,
 		help="baud rate (default: 19200)")
-	parser.add_argument("-t", "--dry", action="store_true", 
+	parser.add_argument("-t", "--dry", action="store_true",
 		help="dry run (printing to stdout instead of serial receipt printer) (default: off)")
-	parser.add_argument("-r", "--replies", action="store_true", 
-		help="do not filter @replies out (default: off)")
-	parser.add_argument("-s", "--sleep", type=int, default=60, 
+	parser.add_argument("-r", "--replies", action="store_true",
+		help="do not filter @replies out")
+	parser.add_argument("-e", "--retweets", action="store_true",
+		help="do not filter Retweets out")
+	parser.add_argument("-s", "--sleep", type=int, default=60,
 		help="sleep between searches (in seconds) (default: 60)")
 
 	args = parser.parse_args()
 
 	serialPrinter = DryPrinter() if args.dry else serial.Serial(args.device, args.baudrate)
-	printer = Printer(serialPrinter, args.searchterm, args.replies)
+	printer = Printer(serialPrinter, args.searchterm, args.replies, args.retweets)
 
 	try:
 		while True:
