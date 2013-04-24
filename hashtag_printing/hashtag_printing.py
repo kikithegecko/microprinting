@@ -1,10 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import serial, textwrap, os
-import twitter
+import serial, textwrap, os, tweepy
 from datetime import datetime
 from time import strftime, mktime, strptime, sleep
+
+# provide your credentials
+consumer_key = ""
+consumer_secret = ""
+access_token = ""
+access_token_secret = ""
 
 class Printer(object):
 
@@ -17,9 +22,19 @@ class Printer(object):
 		# some fancy metadata stuff
 		self.printHeadline(self.searchterm)
 
-		lastIdFilename = "last_id_searchterm_%s" % self.searchterm.replace("#", "")
+		lastIdFilename = "last_id_searchterm_%s" % self.searchterm.replace("#", "").split(" ")[0]
 		microprintPath = os.path.dirname(os.path.abspath(__file__))
 		self.savepointFile = os.path.join(microprintPath, lastIdFilename)
+
+		# connect with Twitter
+		auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+		auth.set_access_token(access_token, access_token_secret)
+		self.twitter = tweepy.API(auth)
+		try:
+			self.twitter.verify_credentials()
+		except tweepy.error.TweepError, e:
+			print "Twitter API error: %s" % e.message[0]["message"]
+			quit()
 
 	def printHeadline(self, text, metadata=None):
 		# Bigger font
@@ -58,34 +73,35 @@ class Printer(object):
 
 	def printRetweets(self):
 		# search query
-		twit = twitter.Twitter(True)
-		timeline = twit.search(self.searchterm, since_id=self.getSavepoint(), max_results=999)
+		timelineIterator = tweepy.Cursor(self.twitter.search, q=self.searchterm, since_id=self.getSavepoint()).items()
+
+		# put everything into a list to be able to sort/filter
+		timeline = []
+		for status in timelineIterator:
+			timeline.append(status)
 
 		if len(timeline) == 0:
 			print "No new Tweets at the moment."
 			return
 
-		lastTweetId = timeline[0]["id"]
+		lastTweetId = timeline[0].id
 
 		if not self.allowReplies:
 			# filter @replies out
-			timeline = filter(lambda status: status["text"][0] != "@", timeline)
+			timeline = filter(lambda status: status.text[0] != "@", timeline)
 
 		if not self.allowRetweets:
 			# filter retweets out
-			timeline = filter(lambda status: status["text"][:3] != "RT ", timeline)
+			timeline = filter(lambda status: status.text[:3] != "RT ", timeline)
 
 		timeline.reverse()
 		print "%d items found." % len(timeline)
 
 		for status in timeline:
 			# Generates messages
-			timestamp = datetime.fromtimestamp(mktime(strptime(status["created_at"],
-				"%a, %d %b %Y %H:%M:%S +0000")))
-
 			message = "(%(created)s) %(screenname)s: %(statusmessage)s\n\n" \
-				% {"created" : timestamp, "screenname" : status["from_user"],
-				"statusmessage" : status["text"]}
+				% {"created" : status.created_at, "screenname" : status.from_user,
+				"statusmessage" : status.text}
 
 			# Wraps the text in order to avoid cut text
 			message = textwrap.fill(text=message, width=48)
@@ -105,6 +121,11 @@ class DryPrinter(object):
 
 if __name__ == "__main__":
 	import argparse
+
+	# credentials empty?
+	if not all([consumer_key, consumer_secret, access_token, access_token_secret]):
+		print "Please provide Twitter API credentials in '%s'." % os.path.abspath(__file__)
+		quit()
 
 	parser = argparse.ArgumentParser(
 		description="Prints tweets containing given search term on serial receipt printer.")
