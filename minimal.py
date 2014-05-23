@@ -2,5 +2,7 @@
 
 import os, sys
 
-# print string (do not forget \n if line is not filled completely)
-os.system("echo " + sys.argv[1] + " > /dev/lp0")
+# print string
+output = 'echo "' + sys.argv[1] + '" > /dev/lp0'
+output = output.encode('cp437', 'replace')
+os.system(output)
