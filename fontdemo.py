@@ -1,53 +1,54 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 """ Prints different fonts in various configurations. """
 
-import serial
+import os
+import struct
 
-# initialize printer with given  baudrate
-printer = serial.Serial("/dev/ttyUSB0", 19200)
+def lp(text):
+   prtr = open('/dev/lp0', 'wb')
+   txt = text + '\n'
+   prtr.write(txt.encode('cp437', 'replace'))
+   prtr.close()
+
+def newpar():
+   # LF LF CR
+   lp('\x0a\x0a\x0d')
 
 # set input text
-inputtext = "abcdefghijklmnopqrstuvwxyz\nABCDEFGHIJKLMNOPQRSTUVWXYZ\n1234567890\n"
+inputtext = "abcdefghijklmnopqrstuvwxyzäöüß ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ 1234567890"
 
 # normal
-printer.write("\x1b\x21\x00")
-printer.write(inputtext + "48 chars per line\n\n\n")
+newpar()
+lp(inputtext + 'normal')
 
-# double height
-printer.write("\x1b\x21\x10")
-printer.write(inputtext + "48 chars per line\n\n\n")
+# italic
+newpar()
+lp('\x1b\x34')
+lp(inputtext + 'italic')
+lp('\x1b\x35')
 
-# double width
-printer.write("\x1b\x21\x20")
-printer.write(inputtext + "24 chars per line\n\n\n")
+# shadow font!/schattenschrift
+newpar()
+lp('\x1b\x45')
+lp(inputtext + 'shadow')
+lp('\x1b\x46')
 
+# bold font
+newpar()
+lp('\x1b\x47')
+lp(inputtext + 'bold')
+lp('\x1b\x48')
 
-# double width and double height
-printer.write("\x1b\x21\x30")
-printer.write(inputtext + "24 chars per line\n\n\n")
+# monospace
+newpar()
+lp('\x1b\x70\x01')
+lp(inputtext + 'monospace')
+lp('\x1b\x70\x00')
 
-# reset
-printer.write("\x1b\x7B\0")
+# vertical height doubled
+newpar()
+lp('\x1b\x77\x01')
+lp(inputtext + 'vertical')
+lp('\x1b\x77\x00')
 
-printer.write("------------------------\n\n\n")
-
-# normal
-printer.write("\x1b\x21\x01")
-printer.write(inputtext + "64 chars per line\n\n\n")
-
-# double height
-printer.write("\x1b\x21\x11")
-printer.write(inputtext + "64 chars per line\n\n\n")
-
-# double width
-printer.write("\x1b\x21\x21")
-printer.write(inputtext + "32 chars per line\n\n\n")
-
-
-# double width and double height
-printer.write("\x1b\x21\x31")
-printer.write(inputtext + "32 chars per line\n\n\n")
-
-# reset
-printer.write("\x1b\x7B\0")
