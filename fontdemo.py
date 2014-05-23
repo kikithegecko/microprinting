@@ -16,7 +16,7 @@ def newpar():
    lp('\x0a\x0a\x0d')
 
 # set input text
-inputtext = "abcdefghijklmnopqrstuvwxyzäöüß ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ 1234567890"
+inputtext = "abcdefghijklmnopqrstuvwxyzäöüß ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ 1234567890\n"
 
 # normal
 newpar()
@@ -40,6 +40,12 @@ lp('\x1b\x47')
 lp(inputtext + 'bold')
 lp('\x1b\x48')
 
+# underlined
+newpar()
+lp('\x1b\x2d\x01')
+lp(inputtext + 'underlined')
+lp('\x1b\x2d\x01')
+
 # monospace
 newpar()
 lp('\x1b\x70\x01')
@@ -51,4 +57,31 @@ newpar()
 lp('\x1b\x77\x01')
 lp(inputtext + 'vertical')
 lp('\x1b\x77\x00')
+
+# broad font/breitschrift
+newpar()
+lp('\x1b\x57\x01')
+lp(inputtext + 'broad')
+lp('\x1b\x57\x00')
+
+# broad and double vertical height
+newpar()
+lp('\x1b\x77\x01 \x1b\x57\x01')
+lp(inputtext + 'borad + vertical')
+lp('\x1b\x77\x00 \x1b\x57\x00')
+
+# 10 characters per inch
+newpar()
+lp('\x1b\x50')
+lp(inputtext + '10 CPI')
+
+# 12 characters per inch
+newpar()
+lp('\x1b\x4d')
+lp(inputtext + '12 CPI')
+
+# 15 characters per inch
+newpar()
+lp('\x1b\x67')
+lp(inputtext + '15 CPI')
 
