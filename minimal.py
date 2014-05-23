@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
-import os, sys
+import sys
 
 # print string
-output = 'echo "' + sys.argv[1] + '" > /dev/lp0'
+lp = open('/dev/lp0', 'wb')
+output = sys.argv[1] + '\n'
 output = output.encode('cp437', 'replace')
-os.system(output)
+lp.write(output)
+
