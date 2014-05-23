@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
+#! -*- coding: utf-8 -*-
 
 """ Prints different fonts in various configurations. """
 
@@ -16,7 +17,7 @@ def newpar():
    lp('\x0a\x0a\x0d')
 
 # set input text
-inputtext = "abcdefghijklmnopqrstuvwxyzäöüß ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ 1234567890\n"
+inputtext = u'abcdefghijklmnopqrstuvwxyzäöüß ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜ 1234567890\n'
 
 # normal
 newpar()
