@@ -1,9 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
-import serial
-
-# initialize printer with given baudrate
-printer = serial.Serial("/dev/ttyUSB0", 19200)
+import os, sys
 
 # print string (do not forget \n if line is not filled completely)
-printer.write("string\n")
+os.system("echo " + sys.argv[1] + " > /dev/lp0")
