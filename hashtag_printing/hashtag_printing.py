@@ -37,8 +37,8 @@ class Printer(object):
 			quit()
 
 	def printHeadline(self, text, metadata=None):
-		# Bigger font
-		self.printer.write("\x1b\x21\x20%s\n\x1b\x21\0" % textwrap.fill(text,24))
+		# Bigger font (TRST-53)/broad font (P20)
+		self.printer.write("\x1b\x21\x20%s\n\x1b\x21\x00" % textwrap.fill(text,24))
 		self.printer.write("------------------------------------------------\n")
 		self.printer.write("%s\n" % strftime("%d.%m.%Y %H:%M"))
 
@@ -54,9 +54,9 @@ class Printer(object):
 		self.printer.write("\n\n\n\n\n")
 
 		if partial:
-			self.printer.write("\x1b\x6D")
+			self.printer.write("\x1b\x6D") 
 		else:
-			self.printer.write("\x1b\x69")
+			self.printer.write("\x1b\x69") 
 
 	def getSavepoint(self):
 		try:
@@ -117,6 +117,14 @@ class DryPrinter(object):
 	def write(self, text):
 		for line in text.split("\n"):
 			print "[Printer] %s" % line
+	
+
+class LinePrinter(object):
+	def write(self, text):
+		lp = open("/dev/lp0", "wb")
+		output = text + '\n'
+		lp.write(output.encode("cp437", "replace")
+		lp.close()
 
 
 if __name__ == "__main__":
